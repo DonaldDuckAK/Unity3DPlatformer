@@ -1,0 +1,52 @@
+git init
+git add .
+git commit -m "Initial commit"
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+    public float moveSpeed = 5.0f;
+    public float jumpForce = 10.0f;
+
+    private Rigidbody rb;
+    private bool isGrounded;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
+
+    void Update()
+    {
+        float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxis("Vertical");
+
+        Vector3 moveDirection = new Vector3(horizontalInput, 0.0f, verticalInput).normalized;
+
+        if (moveDirection != Vector3.zero)
+        {
+            Vector3 desiredForward = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
+            Quaternion rotation = Quaternion.LookRotation(desiredForward);
+            transform.rotation = rotation;
+        }
+
+        Vector3 moveVelocity = transform.TransformDirection(moveDirection) * moveSpeed;
+
+        rb.velocity = new Vector3(moveVelocity.x, rb.velocity.y, moveVelocity.z);
+
+        // Jumping
+        if (isGrounded && Input.GetButtonDown("Jump"))
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            isGrounded = false;
+        }
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = true;
+        }
+    }
+}
