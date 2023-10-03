@@ -1,52 +1,103 @@
-git init
-git add .
-git commit -m "Initial commit"
-using UnityEngine;
+import org.lwjgl.*;
+import org.lwjgl.glfw.*;
+import org.lwjgl.opengl.*;
+import org.lwjgl.system.*;
 
-public class PlayerController : MonoBehaviour
-{
-    public float moveSpeed = 5.0f;
-    public float jumpForce = 10.0f;
+public class PlatformerGame {
+    private long window;
+    private float playerX = 0.0f;
+    private float playerY = 0.0f;
+    private float playerZ = 0.0f;
+    private float playerSpeed = 0.05f;
 
-    private Rigidbody rb;
-    private bool isGrounded;
-
-    void Start()
-    {
-        rb = GetComponent<Rigidbody>();
+    public void run() {
+        init();
+        loop();
+        cleanup();
     }
 
-    void Update()
-    {
-        float horizontalInput = Input.GetAxis("Horizontal");
-        float verticalInput = Input.GetAxis("Vertical");
-
-        Vector3 moveDirection = new Vector3(horizontalInput, 0.0f, verticalInput).normalized;
-
-        if (moveDirection != Vector3.zero)
-        {
-            Vector3 desiredForward = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
-            Quaternion rotation = Quaternion.LookRotation(desiredForward);
-            transform.rotation = rotation;
+    private void init() {
+        GLFWErrorCallback.createPrint(System.err).set();
+        if (!GLFW.glfwInit()) {
+            throw new IllegalStateException("Unable to initialize GLFW");
         }
 
-        Vector3 moveVelocity = transform.TransformDirection(moveDirection) * moveSpeed;
+        GLFW.glfwDefaultWindowHints();
+        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE);
 
-        rb.velocity = new Vector3(moveVelocity.x, rb.velocity.y, moveVelocity.z);
+        window = GLFW.glfwCreateWindow(800, 600, "3D Platformer", 0, 0);
+        if (window == 0) {
+            throw new RuntimeException("Failed to create the GLFW window");
+        }
 
-        // Jumping
-        if (isGrounded && Input.GetButtonDown("Jump"))
-        {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            isGrounded = false;
+        GLFW.glfwMakeContextCurrent(window);
+        GLFW.glfwSwapInterval(1);
+        GLFW.glfwShowWindow(window);
+
+        GL.createCapabilities();
+
+        // Setup OpenGL settings (e.g., enabling depth testing)
+        glEnable(GL_DEPTH_TEST);
+    }
+
+    private void loop() {
+        float deltaTime = 0.0f;
+        float lastFrame = (float) GLFW.glfwGetTime();
+
+        while (!GLFW.glfwWindowShouldClose(window)) {
+            float currentFrame = (float) GLFW.glfwGetTime();
+            deltaTime = currentFrame - lastFrame;
+            lastFrame = currentFrame;
+
+            processInput();
+
+            // Clear the screen
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // Update and render the player character
+            update(deltaTime);
+            render();
+
+            GLFW.glfwSwapBuffers(window);
+            GLFW.glfwPollEvents();
         }
     }
 
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
+    private void processInput() {
+        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
+            GLFW.glfwSetWindowShouldClose(window, true);
         }
+
+        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS) {
+            playerZ -= playerSpeed;
+        }
+        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS) {
+            playerZ += playerSpeed;
+        }
+        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS) {
+            playerX -= playerSpeed;
+        }
+        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS) {
+            playerX += playerSpeed;
+        }
+    }
+
+    private void update(float deltaTime) {
+        // Perform physics calculations, collision detection, and game logic here
+    }
+
+    private void render() {
+        // Render the 3D world and player character here
+    }
+
+    private void cleanup() {
+        GLFW.glfwTerminate();
+        GLFW.glfwSetErrorCallback(null).free();
+    }
+
+    public static void main(String[] args) {
+        new PlatformerGame().run();
     }
 }
